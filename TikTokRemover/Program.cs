@@ -2,7 +2,7 @@
 
 namespace TikTokRemover;
 
-internal class Program {
+public class Program {
     const string FFMPEGPath = "ffmpeg.exe";
     const string FFProbePath = "ffprobe.exe";
 
@@ -15,18 +15,18 @@ internal class Program {
         return command + input;
     }
 
-    private static async Task<int> CountVideoFrames(string input) {
+    public static async Task<int> CountVideoFrames(string input) {
         string args = $"-v error -select_streams v:0 -count_frames -show_entries stream=nb_read_frames -of csv=p=0 {input}";
-        string result = await ExecuteWithOutput(FFProbePath, args);
+        string result = await ExecuteAndReadOutputAsync(FFProbePath, args);
         if (int.TryParse(result, out var frames)) {
             return frames;
         }
         throw new InvalidOperationException();
     }
 
-    private static async Task<(int, int)> GetVideoDimensions(string input) {
+    public static async Task<(int, int)> GetVideoDimensions(string input) {
         string args = $"-v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 {input}";
-        string result = await ExecuteWithOutput(FFProbePath, args);
+        string result = await ExecuteAndReadOutputAsync(FFProbePath, args);
         if (result.Length > 9 || result.Length < 3) {
             throw new ArgumentOutOfRangeException();
         }
@@ -40,11 +40,11 @@ internal class Program {
         return ((int)x, (int)y);
     }
 
-    private static async Task<(byte, byte, byte)> GetPixelAsync(string input, string frameTime, int pixelX, int pixelY) {
+    public static async Task<(byte, byte, byte)> GetPixelAsync(string input, string frameTime, int pixelX, int pixelY) {
         // Get pixel at position
         string tempOutputFile = Path.Join(Directory.GetCurrentDirectory(), $"{Guid.NewGuid()}.yuv");
         string args = $"-i {input} -vf \"crop=1:1:{pixelX}:{pixelY}:exact=1\" -vframes 1 -ss {frameTime} -y \"{tempOutputFile}\"";
-        await Execute(FFMPEGPath, args);
+        await ExecuteAsync(FFMPEGPath, args);
         byte[] bytes = await File.ReadAllBytesAsync(tempOutputFile);
         File.Delete(tempOutputFile);
 
@@ -59,38 +59,28 @@ internal class Program {
         return ((byte)r, (byte)g, (byte)b);
     }
 
-    private static async Task<byte[]> GetFrameAsync(string input, string frameTime) {
+    public static async Task<byte[]> GetFrameAsync(string input, string frameTime) {
         // Get pixel at position
         string tempOutputFile = Path.Join(Directory.GetCurrentDirectory(), $"{Guid.NewGuid()}.png");
         string args = $"-i {input} -vframes 1 -ss {frameTime} -y \"{tempOutputFile}\"";
-        await Execute(FFMPEGPath, args);
+        await ExecuteAsync(FFMPEGPath, args);
         byte[] bytes = await File.ReadAllBytesAsync(tempOutputFile);
         File.Delete(tempOutputFile);
         return bytes;
     }
 
-    private static async Task<byte[]> GetFrameAsync(string input, int frameNumber, float fps) {
+    public static async Task<byte[]> GetFrameAsync(string input, int frameNumber, float fps) {
         float frameTime = GetTimeFromFrame(fps, frameNumber);
         string frameTimeString = FormatMillisecondsTimeAsFfmpegSeek(frameTime);
         return await GetFrameAsync(input, frameTimeString);
     }
 
-    private static async Task<byte[]> DebugGetFrameAsync(string input, int frameNumber, float fps) {
-        float frameTime = GetTimeFromFrame(fps, frameNumber);
-        string frameTimeString = FormatMillisecondsTimeAsFfmpegSeek(frameTime);
-        string tempOutputFile = Path.Join(Directory.GetCurrentDirectory(), $"frame_{frameNumber}.png");
-        string args = $"-i {input} -vframes 1 -ss {frameTimeString} -y \"{tempOutputFile}\"";
-        await Execute(FFMPEGPath, args);
-        byte[] bytes = await File.ReadAllBytesAsync(tempOutputFile);
-        return bytes;
-    }
-
-    private static float GetTimeFromFrame(float fps, int frameNumber) {
+    public static float GetTimeFromFrame(float fps, int frameNumber) {
         float frameInterval = 1000f / fps;
         return frameNumber * frameInterval;
     }
 
-    private static string FormatMillisecondsTimeAsFfmpegSeek(float time) {
+    public static string FormatMillisecondsTimeAsFfmpegSeek(float time) {
         int minutes = (int)(time / 1000f / 60f);
         int seconds = (int)(time / 1000f) % 60;
         int milliseconds = (int)time % 1000;
@@ -98,15 +88,15 @@ internal class Program {
         return minutes.ToString() + ':' + seconds.ToString() + '.' + milliseconds.ToString();
     }
 
-    private static async Task<float> GetVideoDurationAsync(string input) {
-        var durationString = await ExecuteWithOutput(FFProbePath, GetFfprobeArgs(input));
+    public static async Task<float> GetVideoDurationAsync(string input) {
+        var durationString = await ExecuteAndReadOutputAsync(FFProbePath, GetFfprobeArgs(input));
         if (float.TryParse(durationString, out float duration)) {
             return duration;
         }
         throw new ArgumentException();
     }
 
-    private static async Task Main(string[] args) {
+    public static async Task Main(string[] args) {
         string outputPath;
         if (args.Length < 1) {
             Console.WriteLine("Missing arguments.");
@@ -132,7 +122,7 @@ internal class Program {
         Console.WriteLine($"Finished. Output: {outputPath}");
     }
 
-    private static async Task RemoveTikTokOutro(string input, string output) {
+    public static async Task RemoveTikTokOutro(string input, string output) {
         float duration = await GetVideoDurationAsync(input);
         int frameCount = await CountVideoFrames(input);
         float fps = (float)frameCount / (float)duration;
@@ -177,10 +167,10 @@ internal class Program {
 
         float frameTime = GetTimeFromFrame(fps, targetFrame - 1);
         string frameTimeString = FormatMillisecondsTimeAsFfmpegSeek(frameTime);
-        await ExecuteWithOutput(FFMPEGPath, GetFfmpegArgs(input, output, frameTimeString));
+        await ExecuteAndReadOutputAsync(FFMPEGPath, GetFfmpegArgs(input, output, frameTimeString));
     }
 
-    private static async Task<bool> IsTikTokFrame(string input, string timespanString, int frameWidth, int frameHeight) {
+    public static async Task<bool> IsTikTokFrame(string input, string timespanString, int frameWidth, int frameHeight) {
         (byte, byte, byte) color1 = await GetPixelAsync(input, timespanString, 1, 1);
         if (!IsTikTokOutroColor(color1.Item1, color1.Item2, color1.Item3)) {
             return false;
@@ -200,17 +190,17 @@ internal class Program {
         return true;
     }
 
-    private static async Task<bool> IsTikTokFrame(string input, int frameNumber, float fps, int frameWidth, int frameHeight) {
+    public static async Task<bool> IsTikTokFrame(string input, int frameNumber, float fps, int frameWidth, int frameHeight) {
         float frameTime = GetTimeFromFrame(fps, frameNumber);
         string frameTimeString = FormatMillisecondsTimeAsFfmpegSeek(frameTime);
         return await IsTikTokFrame(input, frameTimeString, frameWidth, frameHeight);
     }
 
-    private static bool IsTikTokOutroColor(byte r, byte g, byte b) {
+    public static bool IsTikTokOutroColor(byte r, byte g, byte b) {
         return r > 10 && r < 30 && g > 10 && g < 30 && b > 15 && b < 35;
     }
 
-    private static async Task<string> ExecuteWithOutput(string exePath, string parameters) {
+    public static async Task<string> ExecuteAndReadOutputAsync(string exePath, string parameters) {
         string result = string.Empty;
 
         using (Process p = new Process()) {
@@ -228,7 +218,7 @@ internal class Program {
         return result;
     }
 
-    private static async Task Execute(string exePath, string parameters) {
+    public static async Task ExecuteAsync(string exePath, string parameters) {
         using (Process p = new Process()) {
             p.StartInfo.UseShellExecute = false;
             p.StartInfo.CreateNoWindow = true;
