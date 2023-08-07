@@ -1,6 +1,9 @@
 ﻿namespace TikTokRemover;
 
 public class TikTok {
+	/// <summary>This is the number of frames that TikTok freezes the video to play their outro audio before transitioning to the outro video</summary>
+	public static int OutroFramePadding = 8;
+
     public static async Task RemoveTikTokOutro(string input, string output) {
         float duration = await FfmpegHelpers.GetVideoDurationAsync(input);
         int frameCount = await FfmpegHelpers.CountVideoFrames(input);
@@ -10,26 +13,38 @@ public class TikTok {
         int videoWidth = videoDimensions.Item1;
         int videoHeight = videoDimensions.Item2;
 
+        Console.WriteLine($"Processing video with {frameCount} frames");
+
+        string frameTimeString;
+
         // Search for start of video
         int targetFrame = frameCount;
         int jumpAmount = 60;
         while (true) {
-            bool isOutroFrame = await IsTikTokFrame(input, targetFrame - jumpAmount, fps, videoWidth, videoHeight);
+			bool isOutroFrame = await IsTikTokFrame(input, targetFrame - jumpAmount, fps, videoWidth, videoHeight);
+            // await FfmpegHelpers.DebugGetFrameAsync(input, targetFrame - jumpAmount, fps);
+            Console.Write($"Checking frame {targetFrame - jumpAmount}: ");
             // If still in outro, move back jumpAmount
             if (isOutroFrame) {
+                Console.WriteLine("Outro");
                 targetFrame -= jumpAmount;
             }
             // If now in video, halve jump amount and retry
             else {
+				Console.WriteLine($"Video");
                 // If located border, break.
                 if (jumpAmount == 1) {
                     // Check for error (no outro detected)
                     if (targetFrame == frameCount) {
-                        throw new ArgumentException();
+                        Console.WriteLine("Error. Failed to detect the outro.");
+						throw new ArgumentException();
                     }
                     // targetFrame is now the first frame where the outro begins.
                     else {
-                        break;
+						Console.WriteLine($"Outro video begins at frame {targetFrame}");
+						Console.WriteLine($"Outro audio expected at frame {targetFrame - OutroFramePadding + 1}");
+						Console.WriteLine($"Targeting frames 0 to {targetFrame - OutroFramePadding} for clip");
+						break;
                     }
                 }
                 // Halve jump amount.
@@ -37,9 +52,9 @@ public class TikTok {
             }
         }
 
-        float frameTime = FfmpegHelpers.GetTimeFromFrame(fps, targetFrame - 1);
-        string frameTimeString = FfmpegHelpers.FormatMillisecondsTimeAsFfmpegSeek(frameTime);
-        string args = $"-i {input} -y -ss 0 -t {frameTimeString} -c:v copy -c:a copy {output}";
+		frameTimeString = FfmpegHelpers.GetSeekStringFromFrameNumber(targetFrame - OutroFramePadding, fps);
+		string args = $"-i {input} -y -ss 0 -t {frameTimeString} -c:v copy -c:a copy {output}";
+		Console.WriteLine($"Clipping video from 00:00.000 to {frameTimeString}");
         await ProcessHelpers.ExecuteAndReadOutputAsync(FfmpegHelpers.FFMPEGPath, args);
     }
 

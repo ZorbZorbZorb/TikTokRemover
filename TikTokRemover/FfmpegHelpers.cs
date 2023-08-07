@@ -34,10 +34,10 @@ public static class FfmpegHelpers {
         return ((int)x, (int)y);
     }
 
-    public static async Task<(byte, byte, byte)> GetPixelAsync(string input, string frameTime, int pixelX, int pixelY) {
+    public static async Task<(byte, byte, byte)> GetPixelAsync(string input, string frameTimeString, int pixelX, int pixelY) {
         // Get pixel at position
         string tempOutputFile = Path.Join(Directory.GetCurrentDirectory(), $"{Guid.NewGuid()}.yuv");
-        string args = $"-i {input} -vf \"crop=1:1:{pixelX}:{pixelY}:exact=1\" -vframes 1 -ss {frameTime} -y \"{tempOutputFile}\"";
+        string args = $"-i {input} -vf \"crop=1:1:{pixelX}:{pixelY}:exact=1\" -vframes 1 -ss {frameTimeString} -y \"{tempOutputFile}\"";
         await ProcessHelpers.ExecuteAsync(FFMPEGPath, args);
         byte[] bytes = await File.ReadAllBytesAsync(tempOutputFile);
         File.Delete(tempOutputFile);
@@ -53,13 +53,12 @@ public static class FfmpegHelpers {
         return ((byte)r, (byte)g, (byte)b);
     }
 
-    public static async Task<byte[]> GetFrameAsync(string input, string frameTime) {
-        // Get pixel at position
+    public static async Task<byte[]> GetFrameAsync(string input, string frameTimeString) {
         string tempOutputFile = Path.Join(Directory.GetCurrentDirectory(), $"{Guid.NewGuid()}.png");
-        string args = $"-i {input} -vframes 1 -ss {frameTime} -y \"{tempOutputFile}\"";
+        string args = $"-i {input} -vframes 1 -ss {frameTimeString} -y \"{tempOutputFile}\"";
         await ProcessHelpers.ExecuteAsync(FFMPEGPath, args);
         byte[] bytes = await File.ReadAllBytesAsync(tempOutputFile);
-        File.Delete(tempOutputFile);
+        // File.Delete(tempOutputFile);
         return bytes;
     }
 
@@ -69,12 +68,26 @@ public static class FfmpegHelpers {
         return await GetFrameAsync(input, frameTimeString);
     }
 
-    public static string FormatMillisecondsTimeAsFfmpegSeek(float time) {
+	public static async Task<byte[]> DebugGetFrameAsync(string input, int frameNumber, float fps) {
+		float frameTime = GetTimeFromFrame(fps, frameNumber);
+		string frameTimeString = FormatMillisecondsTimeAsFfmpegSeek(frameTime);
+		string tempOutputFile = Path.Join(Directory.GetCurrentDirectory(), $"fr_{frameNumber}.png");
+		string args = $"-i {input} -vframes 1 -ss {frameTimeString} -y \"{tempOutputFile}\"";
+		await ProcessHelpers.ExecuteAsync(FFMPEGPath, args);
+		byte[] bytes = await File.ReadAllBytesAsync(tempOutputFile);
+		return bytes;
+	}
+
+	public static string FormatMillisecondsTimeAsFfmpegSeek(float time) {
         int minutes = (int)(time / 1000f / 60f);
         int seconds = (int)(time / 1000f) % 60;
         int milliseconds = (int)time % 1000;
 
-        return minutes.ToString() + ':' + seconds.ToString() + '.' + milliseconds.ToString();
+        return minutes.ToString() + ':' + seconds.ToString() + '.' + milliseconds.ToString().PadLeft(3, '0');
+    }
+
+    public static string GetSeekStringFromFrameNumber(int frameNumber, float fps) {
+        return FormatMillisecondsTimeAsFfmpegSeek(GetTimeFromFrame(fps, frameNumber));
     }
 
     public static async Task<float> GetVideoDurationAsync(string input) {

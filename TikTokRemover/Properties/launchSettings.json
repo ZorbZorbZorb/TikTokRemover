@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "TikTokRemover": {
+      "commandName": "Project",
+      "commandLineArgs": "C:\\users\\pc\\desktop\\input.mov\r\nC:\\users\\pc\\desktop\\output.mp4"
+    }
+  }
+}
