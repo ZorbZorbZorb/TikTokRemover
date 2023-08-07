@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33815.320
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TikTokRemover", "TikTokRemover\TikTokRemover.csproj", "{DC84D7F7-16BB-4117-96D6-4FAEB5C0D59D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DC84D7F7-16BB-4117-96D6-4FAEB5C0D59D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC84D7F7-16BB-4117-96D6-4FAEB5C0D59D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC84D7F7-16BB-4117-96D6-4FAEB5C0D59D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC84D7F7-16BB-4117-96D6-4FAEB5C0D59D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {83352954-DA40-4943-985A-551ECEC50F10}
+	EndGlobalSection
+EndGlobal
