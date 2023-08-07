@@ -6,13 +6,6 @@ public class TikTok {
         int frameCount = await FfmpegHelpers.CountVideoFrames(input);
         float fps = (float)frameCount / (float)duration;
 
-        float[] frameTimes = new float[frameCount];
-        string[] frameTimeStrings = new string[frameCount];
-        for (int i = 0; i < frameCount; i++) {
-            frameTimes[i] = FfmpegHelpers.GetTimeFromFrame(fps, i);
-            frameTimeStrings[i] = FfmpegHelpers.FormatMillisecondsTimeAsFfmpegSeek(frameTimes[i]);
-        }
-
         var videoDimensions = await FfmpegHelpers.GetVideoDimensions(input);
         int videoWidth = videoDimensions.Item1;
         int videoHeight = videoDimensions.Item2;
