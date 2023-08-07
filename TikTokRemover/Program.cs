@@ -2,6 +2,16 @@
 
 public class Program {
     public static async Task Main(string[] args) {
+
+        if (!File.Exists(FfmpegHelpers.FFMPEGPath)) {
+            Console.WriteLine("FFMPEG not found. Please copy FFMPEG.exe to the program's working directory.");
+            return;
+        }
+        if (!File.Exists(FfmpegHelpers.FFProbePath)) {
+            Console.WriteLine("FFMPEG not found. Please copy FFPROBE.exe to the program's working directory.");
+            return;
+        }
+
         string outputPath;
         if (args.Length < 1) {
             Console.WriteLine("Missing arguments.");
