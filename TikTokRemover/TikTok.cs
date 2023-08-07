@@ -46,7 +46,8 @@ public class TikTok {
 
         float frameTime = FfmpegHelpers.GetTimeFromFrame(fps, targetFrame - 1);
         string frameTimeString = FfmpegHelpers.FormatMillisecondsTimeAsFfmpegSeek(frameTime);
-        await ProcessHelpers.ExecuteAndReadOutputAsync(FfmpegHelpers.FFMPEGPath, FfmpegHelpers.GetFfmpegArgs(input, output, frameTimeString));
+        string args = $"-i {input} -y -ss 0 -t {frameTimeString} -c:v copy -c:a copy {output}";
+        await ProcessHelpers.ExecuteAndReadOutputAsync(FfmpegHelpers.FFMPEGPath, args);
     }
 
     public static async Task<bool> IsTikTokFrame(string input, string timespanString, int frameWidth, int frameHeight) {

@@ -4,16 +4,6 @@ public static class FfmpegHelpers {
     public static string FFMPEGPath = "ffmpeg.exe";
     public static string FFProbePath = "ffprobe.exe";
 
-
-    public static string GetFfmpegArgs(string input, string output, string endTime) {
-        return $"-i {input} -y -ss 0 -t {endTime} -c:v copy -c:a copy {output}";
-    }
-
-    private static string GetFfprobeArgs(string input) {
-        const string command = "-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ";
-        return command + input;
-    }
-
     public static float GetTimeFromFrame(float fps, int frameNumber) {
         float frameInterval = 1000f / fps;
         return frameNumber * frameInterval;
@@ -88,7 +78,8 @@ public static class FfmpegHelpers {
     }
 
     public static async Task<float> GetVideoDurationAsync(string input) {
-        var durationString = await ProcessHelpers.ExecuteAndReadOutputAsync(FFProbePath, GetFfprobeArgs(input));
+        string args = "-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 " + input;
+        var durationString = await ProcessHelpers.ExecuteAndReadOutputAsync(FFProbePath, args);
         if (float.TryParse(durationString, out float duration)) {
             return duration;
         }
